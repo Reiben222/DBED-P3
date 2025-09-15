@@ -89,11 +89,11 @@ def run_engine():
 
         #drop index command
         elif command.startswith("drop index"):
-            words = command.split(" ")   # split by space
-            if len(words) < 3:           # not enough words
+            words = command.split(" ")
+            if len(words) < 3:           # no enough words
                 print("Wrong command")
                 continue
-            c = words[2]                 # take the 3rd word as column
+            c = words[2]                 # take the third word as column
             out = db.drop_index(c)       # drop index
             print(out[1])
 
