@@ -72,66 +72,56 @@ class SimpleDatabase:
             if row[col_id] == column_value:
                 selected_rows.append(row)
 
-            return self.header, selected_rows
-    def create_index(self, column_name):
-        # check if column exists
-            if column_name not in self.columns:
-                return (False, f"Error: column '{column_name}' does not exist.")
+        return self.header, selected_rows
 
-            col_id = self.columns[column_name]
+    def create_index(self, c):
+        if c not in self.columns:
+            return (False, "Error: column '" + c + "' does not exist.")
 
-        # already has index?
-            if self.b_trees[col_id] is not None:
-                return (False, f"Error: index already exists on '{column_name}'.")
+        cid = self.columns[c]
+        if self.b_trees[cid] is not None:
+            return (False, "Error: index already exists on '" + c + "'.")
 
-        # build index: key -> list of row ids
-            index_map = {}
-            for i, row in enumerate(self.rows):
-                key = row[col_id]
+        index_map = {}
+        for i, row in enumerate(self.rows):
+            key = row[cid]
             if key not in index_map:
                 index_map[key] = []
             index_map[key].append(i)
 
-        # store index
-            self.b_trees[col_id] = index_map
+        self.b_trees[cid] = index_map
+        return (True, "Index created on '" + c + "'.")
 
-            return (True, f"Index created on '{column_name}'.")
-    def drop_index(self, column_name):
-        if column_name not in self.columns:
-            return (False, f"Error: column '{column_name}' does not exist.")
+    def drop_index(self, c):
+        if c not in self.columns:
+            return (False, "Error: column '" + c + "' does not exist.")
 
-        col_id = self.columns[column_name]
+        cid = self.columns[c]
+        if self.b_trees[cid] is None:
+            return (False, "Error: no index exists on '" + c + "'.")
 
-        if self.b_trees[col_id] is None:
-            return (False, f"Error: no index exists on '{column_name}'.")
+        self.b_trees[cid] = None
+        return (True, "Index dropped on '" + c + "'.")
 
-        self.b_trees[col_id] = None
-        return (True, f"Index dropped on '{column_name}'.")
-    def get_indexed_columns(self):
-        out = []
-        for i, idx in enumerate(self.b_trees):
-            if idx is not None:
-                out.append(self.header[i])
-        return out
-    def select_rows(self, table_name, column_name, column_value):
-        if table_name != self.table_name:
+    def select_rows(self, t, c, v):
+        if t != self.table_name:
             return [], []
 
-        if column_name not in self.columns:
+        if c not in self.columns:
             return self.header, []
 
-        col_id = self.columns[column_name]
+        cid = self.columns[c]
 
-        # if exist, use index
-        if self.b_trees and self.b_trees[col_id] is not None:
-            index_map = self.b_trees[col_id]
-            row_ids = index_map.get(column_value, [])
-            selected_rows = [self.rows[i] for i in row_ids]
-            return self.header, selected_rows
+        # if index exists, just use it
+        if self.b_trees and self.b_trees[cid] is not None:
+            index_map = self.b_trees[cid]
+            ids = index_map.get(v, [])
+            rows_found = [self.rows[i] for i in ids]
+            return self.header, rows_found
 
-        # scan
-        selected_rows = []
+        # otherwise do full scan
+        rows_found = []
         for row in self.rows:
-            if row[col_id] == column_value:
-                selected_rows.append(row)
-        return self.header, selected_rows
+            if row[cid] == v:
+                rows_found.append(row)
+        return self.header, rows_found
